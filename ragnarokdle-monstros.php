@@ -85,7 +85,7 @@ if (isset($_POST['dica'])) {
   $n = $_POST['dica'];
   //var_dump($n);
   if (isset($_SESSION['dicas'][$n])) {
-    $_SESSION['dicas_reveladas'][$n] = true;
+    $_SESSION['dicas_reveladas'][$n] = ['durante_o_jogo' => !$descobriu];
     $dicas = $_SESSION['dicas_reveladas'];
   }
 }
@@ -233,6 +233,13 @@ seed: [<?php echo $seed; ?>]<br>
 <br>
 
 <br>Palpites: <?php echo count($palpites); ?>
+<br>Dicas reveladas durante o jogo:
+<?php
+  echo ($dicas[0] && $dicas[0]['durante_o_jogo'] ? 'mapa' : '')
+    . ($dicas[0] && $dicas[0]['durante_o_jogo'] && $dicas[1] && $dicas[1]['durante_o_jogo'] ? ', ' : '')
+    . ($dicas[1] && $dicas[1]['durante_o_jogo'] ? 'item' : '')
+    . (!$dicas[0] && !$dicas[1] ? 'Nenhuma' : '');
+?>
 <form action="ragnarokdle-monstros.php" method="POST">
 <?php
 //var_dump($_SESSION['dicas']);
