@@ -17,7 +17,7 @@ if (empty($_POST['novo'])) {
   if (empty($_SESSION['modo'])) {
     header('Location: index.php');
     die();
-  } else if ($_SESSION['modo'] != 'monstro') {
+  } else if ($_SESSION['modo'] != 'arma') {
     $_SESSION['mensagem'] = 'Já existe um jogo em andamento.';
     header('Location: index.php');
     die();
@@ -67,7 +67,7 @@ $qtde_palpites_pra_revelar_dica_2 = 12;
 
 $palpite = '';
 $erro = '';
-$monstro = '';
+$arma = '';
 $nomes_restantes = [];
 
 if (isset($_SESSION['seed']))
@@ -89,9 +89,9 @@ if (isset($_POST['dica'])) {
     $dicas = $_SESSION['dicas_reveladas'];
   }
 }
-
+  
 if (isset($_POST['novo'])) {
-  $dados = obter_dados('/jogo', ['modo'=>'monstro']);
+  $dados = obter_dados('/jogo', ['modo'=>'arma']);
   //var_dump($dados);exit;
   if (!$dados) {
     $_SESSION['mensagem'] = 'Erro na comunicação com o servidor.';
@@ -118,7 +118,7 @@ if (isset($_POST['novo'])) {
   unset($_SESSION['nomes']);
   unset($_SESSION['descobriu']);
 
-  unset($_SESSION['ids']);
+  unset($_SESSION['ids']); //lembrete
   unset($_SESSION['sprites']);
 }
 
@@ -134,7 +134,7 @@ if (empty($_SESSION['nomes'])) {
     header('Location: index.php');
     die();
   }
-  //$_SESSION['ids'] = $dados['ids_dos_monstros'];
+  //$_SESSION['ids'] = $dados['ids'];
   $_SESSION['nomes'] = $dados['nomes'];
   //$collator = collator_create('pt-BR');
   //collator_sort($collator, $_SESSION['nomes']);
@@ -151,9 +151,9 @@ if (isset($_POST['palpite']) && $_SESSION['descobriu'] == false) {
   else if (isset($dados['erro']))
     $erro = $dados['erro'];
   else {
-    $monstro = $dados;
-    array_push($_SESSION['palpites'], $monstro);
-    array_unshift($palpites, $monstro);
+    $arma = $dados;
+    array_push($_SESSION['palpites'], $arma);
+    array_unshift($palpites, $arma);
   }
 }
 
@@ -190,13 +190,13 @@ if (empty($_SESSION['descobriu'])) {
   $descobriu = $_SESSION['descobriu'];
 }
 
-$nomes_dos_monstros_palpitados = array_map(function($p) {return $p['nome'];}, $palpites);
-$nomes_restantes = array_diff($nomes, $nomes_dos_monstros_palpitados);
+$nomes_das_armas_palpitadas = array_map(function($p) {return $p['nome'];}, $palpites);
+$nomes_restantes = array_diff($nomes, $nomes_das_armas_palpitadas);
 
-if (isset($monstro['id_r']) && $monstro['id_r'] === 1) {
+if (isset($arma['id_r']) && $arma['id_r'] === 1) {
   $descobriu = true;
   $_SESSION["descobriu"] = true;
-  $erro = 'Parabéns! Você descobriu o monstro!';
+  $erro = 'Parabéns! Você descobriu a arma!';
 }
 ?>
 
@@ -206,34 +206,34 @@ if (isset($monstro['id_r']) && $monstro['id_r'] === 1) {
     <meta charset="UTF-8">
     <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ragnarökdle - Monstros</title>
+    <title>Ragnarökdle - Armas</title>
   </head>
 <body>
 
-<datalist id="monstros">
+<datalist id="armas">
 <?php
 foreach ($nomes_restantes as $p)
  echo '<option value="'.$p.'"></option>';
 ?>
 </datalist>
 
-Ragnarökdle - Monstros<br>
+Ragnarökdle - Armas<br>
 seed: [<?php echo $seed; ?>]<br>
 
-<form action="ragnarokdle-monstros.php" method="POST">
+<form action="ragnarokdle-armas.php" method="POST">
   <input type="submit" name="voltar" value="Voltar">
 </form>
 
-<form action="ragnarokdle-monstros.php" method="POST" id="form_palpite" style="margin: 0.5rem 0;">
-  <label for="palpite">Monstro:</label><br>
-  <input id="palpite" list="monstros" name="palpite" autofocus autocomplete="off" />
+<form action="ragnarokdle-armas.php" method="POST" id="form_palpite" style="margin: 0.5rem 0;">
+  <label for="palpite">Arma:</label><br>
+  <input id="palpite" list="armas" name="palpite" autofocus autocomplete="off" />
   <input id="enviar" type="submit" <?php if ($descobriu) echo 'disabled'; ?> value="Enviar">
 </form>
 <?php echo $erro; ?>
 <br>
 
 <br>Palpites: <?php echo count($palpites); ?>
-<form action="ragnarokdle-monstros.php" method="POST">
+<form action="ragnarokdle-armas.php" method="POST">
 <?php
 //var_dump($_SESSION['dicas']);
 //var_dump($dicas);
@@ -242,30 +242,30 @@ seed: [<?php echo $seed; ?>]<br>
     //$i = $seed % count($dicas);
     if (!$dicas[0]){
       if (count($palpites) < $qtde_palpites_pra_revelar_dica_1 && !$descobriu)
-        echo '<button disabled>Revelar primeira letra do mapa em '
+        echo '<button disabled>Revelar início da descrição em '
           .($qtde_palpites_pra_revelar_dica_1 - count($palpites))
           .' palpites</button>';
       else
-        echo '<button type="submit" name="dica" value="'. 0 .'">Revelar primeira letra do mapa</button>';
-    } else if (isset($_SESSION['dicas'][0][0]))
-      echo 'Nome do mapa'
-        .($descobriu ? ': '.$_SESSION['dicas'][0][0]->mapname
-          : ' começa com: "'.substr($_SESSION['dicas'][0][0]->mapname, 0, 1).'"');
+        echo '<button type="submit" name="dica" value="'. 0 .'">Revelar '
+          .(!$descobriu ? 'início da ' : '').'descrição</button>';
+    } else if (isset($_SESSION['dicas'][0]))
+      echo 'Descrição: '.($descobriu ? $_SESSION['dicas'][0] : trim(substr($_SESSION['dicas'][2], 0, 30)).'...');
     else
-      echo 'Não spawna naturalmente.';
+      echo '[sem descrição]';
   //}
   echo '<br>';
   if (!$dicas[1]){
     if (count($palpites) < $qtde_palpites_pra_revelar_dica_2 && !$descobriu)
-      echo '<button disabled>Revelar item com maior chance de drop em '
+      echo '<button disabled>Revelar monstro com maior chance de drop em '
         .($qtde_palpites_pra_revelar_dica_2 - count($palpites))
         .' palpites</button>';
     else
-      echo '<button type="submit" name="dica" value="'. 1 .'">Revelar item com maior chance de drop</button>';
-  } else if (isset($_SESSION['dicas'][1]->id))
-    echo 'Item com maior chance de drop: '.$_SESSION['dicas'][1]->nome.' ('.($_SESSION['dicas'][1]->chance/100).'%)';
+      echo '<button type="submit" name="dica" value="'. 1 .'">Revelar monstro com maior chance de drop</button>';
+  } else if ($_SESSION['dicas'][1])
+    echo 'Monstro com maior chance de drop: '.$_SESSION['dicas'][1][0]->monster
+      .' ('.str_replace('.', ',', $_SESSION['dicas'][1][0]->rate).')';
   else
-    echo 'Não dropa nenhum item.';
+    echo 'Não dropa de nenhum monstro.';
 ?>
 </form>
 
@@ -273,11 +273,15 @@ seed: [<?php echo $seed; ?>]<br>
 <tr>
   <th></th>
   <th>Nome</th>
-  <th>Nível</th>
-  <th>Raça</th>
-  <th>Tamanho</th>
+  <th>Tipo</th>
+  <th>Slots</th>
+  <th>Nível da arma</th>
+  <th>Ataque</th>
   <th>Propriedade</th>
-  <th>Nv. prop.</th>
+  <th>Peso</th>
+  <th>Preço de venda</th>
+  <th>Pode ser comprado em NPC</th>
+  <!--<th>Pode ser dropado por monstros</th>-->
 </tr>
 
 <?php
@@ -285,19 +289,25 @@ foreach($palpites as $pp) {
   $pp = (object) $pp;
   echo '
   <tr>
-    <td style="float: right;"><img title="'.$pp->id.'" src="https://db.irowiki.org/image/monster/'.$pp->id.'.png"</td>
+    <td style="float: right;"><img title="'.$pp->id.'" src="https://db.irowiki.org/image/item/'.$pp->id.'.png"</td>
     <td style="background-color: '.($pp->nome_r ? 'lime' : 'red').';">'
     .$pp->nome.'</td>
-    <td style="background-color: '.($pp->nivel_r === 1 ? 'lime' : 'red').';">'
-    .($pp->nivel_r === 2 ? '<' : ($pp->nivel_r === 0 ? '>' : '')).($pp->nivel).'</td>
-    <td style="background-color: '.($pp->raca_r ? 'lime' : 'red').';">'
-    .$pp->raca.'</td>
-    <td style="background-color: '.($pp->tamanho_r ? 'lime' : 'red').';">'
-    .$pp->tamanho.'</td>
+    <td style="background-color: '.($pp->tipo_r ? 'lime' : 'red').';">'
+    .$pp->tipo.'</td>
+    <td style="background-color: '.($pp->slots_r ? 'lime' : 'red').';">'
+    .$pp->slots.'</td>
+    <td style="background-color: '.($pp->nivel_da_arma_r ? 'lime' : 'red').';">'
+    .$pp->nivel_da_arma.'</td>
+    <td style="background-color: '.($pp->ataque_r === 1 ? 'lime' : 'red').';">'
+    .($pp->ataque_r === 2 ? '<' : ($pp->ataque_r === 0 ? '>' : '')).($pp->ataque).'</td>
     <td style="background-color: '.($pp->propriedade_r ? 'lime' : 'red').';">'
     .$pp->propriedade.'</td>
-    <td style="background-color: '.($pp->nivel_prop_r === 1 ? 'lime' : 'red').';">'
-    .$pp->nivel_prop.'</td>
+    <td style="background-color: '.($pp->peso_r === 1 ? 'lime' : 'red').';">'
+    .($pp->peso_r === 2 ? '<' : ($pp->peso_r === 0 ? '>' : '')).($pp->peso).'</td>
+    <td style="background-color: '.($pp->preco_de_venda_r === 1 ? 'lime' : 'red').';">'
+    .($pp->preco_de_venda_r === 2 ? '<' : ($pp->preco_de_venda_r === 0 ? '>' : '')).($pp->preco_de_venda).'</td>
+    <td style="background-color: '.($pp->pode_ser_comprado_r ? 'lime' : 'red').';">'
+    .($pp->pode_ser_comprado ? 'Sim' : 'Não').'</td>
   </tr>
   ';
 }
@@ -306,7 +316,7 @@ foreach($palpites as $pp) {
 
 <?php
 //if ($descobriu && isset($_POST['palpite']))
-//  echo "<script>alert('Parabéns! Você descobriu o monstro!')</script>";
+//  echo "<script>alert('Parabéns! Você descobriu a arma!')</script>";
 ?>
 
 </body>

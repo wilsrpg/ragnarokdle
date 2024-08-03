@@ -3,19 +3,23 @@
 //date_default_timezone_set('America/Sao_Paulo');
 //echo session_id();
 require 'vendor/autoload.php';
-session_start();
+if (session_status() === 1)
+  session_start();
+$seed = (int) date("Ymd");
 
-if(isset($_POST['continuar'])) {
-  if ($_SESSION['jogo'] == 'monstros')
+if(isset($_SESSION['seed']) && $_SESSION['seed'] != date("Ymd"))
+  $_SESSION = [];
+
+if(isset($_POST['continuar']) && isset($_SESSION['modo'])) {
+  if ($_SESSION['modo'] == 'monstro')
     header('Location: ragnarokdle-monstros.php');
-  else if ($_SESSION['jogo'] == 'itens')
-    header('Location: ragnarokdle-itens.php');
+  else if ($_SESSION['modo'] == 'arma')
+    header('Location: ragnarokdle-armas.php');
   die();
 }
 
-if(isset($_POST['excluir'])) {
-  unset($_SESSION);
-}
+if(isset($_POST['excluir']))
+  $_SESSION = [];
 ?>
 
 <!DOCTYPE html>
@@ -27,64 +31,48 @@ if(isset($_POST['excluir'])) {
     <title>Ragnarökdle</title>
   </head>
 <body>
-
-Ragnarökdle<br>
+Ragnarökdle
+<br><br>
+<form id="jogo" method="POST" action="ragnarokdle-monstros.php">
+  Selecione o modo de jogo:<br>
+  <input type="radio" name="modo" id="monstro" value="monstro" onchange="atualizarModo()" checked autofocus />
+  <label for="monstro">Monstro</label>
+  <input type="radio" name="modo" id="item" value="item" onchange="atualizarModo()" />
+  <label for="item">Item</label>
+  <br><br>
+  <input type="submit" name="novo" value="Iniciar novo jogo">
+</form>
 
 <form action="index.php" method="POST">
-  <input type="submit" name="continuar" <?php if (empty($_SESSION['seed'])) echo 'disabled'?> value="Continuar jogo anterior">
-  <input type="submit" name="excluir" <?php if (empty($_SESSION['seed'])) echo 'disabled'?> value="Excluir jogo atual">
+  <input type="submit" name="continuar" <?php if (empty($_SESSION['modo'])) echo 'disabled'?> value="Continuar jogo anterior">
+  <br>
+  <input type="submit" name="excluir" <?php if (empty($_SESSION['modo'])) echo 'disabled'?> value="Excluir jogo atual">
 </form>
 
-<form method="POST">
-  <input type="submit" formaction="ragnarokdle-monstros.php" name="novo" value="Novo jogo - Monstros">
-  <br>
-  <input type="submit" formaction="ragnarokdle-itens.php" name="novo" value="Novo jogo - Itens">
-</form>
 
 <?php
 if (!empty($_SESSION['mensagem'])) {
-  echo $_SESSION['mensagem'];
-  //echo "<script>alert('{$_SESSION['mensagem']}')</script>";
+  echo '<span style="color: red;">'.$_SESSION['mensagem'].'</span>';
   unset($_SESSION['mensagem']);
-}
-
-
-
-function obter_dados($id, $post=[]) {
-  $ch = curl_init();
-
-  $URL_BASE = 'https://www.divine-pride.net/api/database/Monster/';
-  $API_KEY = '?apiKey=7e9552d32c9990d74dd961c53f1a6eed';
-  $IDIOMA = '&server=bRO';
-
-  curl_setopt($ch, CURLOPT_URL, $URL_BASE.$id.$API_KEY.$IDIOMA);
-  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
-  //curl_setopt($curl, CURLOPT_COOKIEJAR, $cookieFile);  //tell cUrl where to write cookie data
-  //curl_setopt($curl, CURLOPT_COOKIEFILE, $cookieFile); //tell cUrl where to read cookie data from
-  //curl_setopt($ch, CURLOPT_COOKIE, 'PHPSESSID='.$_COOKIE['PHPSESSID']);
-  if ($post && is_array($post)) {
-    curl_setopt($ch, CURLOPT_POST, count($post));
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-  }
-
-  $dados = curl_exec($ch);
-  $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  curl_close($ch);
-
-  if ($http_code != 200 || !$dados) {
-    return json_encode(['erro' => 'Erro na comunicação com o servidor: '.curl_error($ch)]);
-  }
-  return json_decode($dados);
-}
-
-for ($i=1; $i <= 50; $i++) {
-  $dados = obter_dados(1000+$i);
-  echo $dados->id.': '.$dados->name.'<br>';
-  //echo $dados;
 }
 ?>
 
 </body>
+
+<script>
+  function atualizarModo() {
+    if (document.getElementById('monstro').checked)
+      document.getElementById('jogo').action = 'ragnarokdle-monstros.php';
+    if (document.getElementById('item').checked)
+      document.getElementById('jogo').action = 'ragnarokdle-armas.php';
+  }
+
+  function iniciar() {
+    if (document.getElementById('monstro').checked)
+      document.getElementById('jogo').action = 'ragnarokdle-monstros.php';
+    if (document.getElementById('item').checked)
+      document.getElementById('jogo').action = 'ragnarokdle-armas.php';
+  }
+</script>
+
 </html>
