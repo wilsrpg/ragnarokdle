@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Sao_Paulo');
 require 'vendor/autoload.php';
 session_start();
 
@@ -57,11 +58,29 @@ function obter_dados($rota, $post=[]) {
   return $dados;
 }
 
+function replace_accents($str) {
+  $str = htmlentities($str, ENT_COMPAT, "UTF-8");
+  $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|cedil);/','$1',$str);
+  return html_entity_decode($str);
+}
+//iconv('UTF-8','ASCII//TRANSLIT',$val);
+function cmp($a, $b) {
+  //echo '<br>ori: '.$a.' '.$b;
+  $a = preg_replace('/ \[\d\]/', '', $a);
+  $b = preg_replace('/ \[\d\]/', '', $b);
+  //echo '<br>-slot: '.$a.' '.$b;
+  $a = strtolower(replace_accents($a));
+  $b = strtolower(replace_accents($b));
+  //echo '<br>minús, -acen: '.$a.' '.$b;
+  //exit;
+  return strcmp($a, $b);
+}
+
 $seed = 0;
 $palpites = [];
 $nomes = [];
-$dicas = [false, false];
 $descobriu = false;
+$dicas = [false, false];
 $qtde_palpites_pra_revelar_dica_1 = 7;
 $qtde_palpites_pra_revelar_dica_2 = 12;
 
@@ -76,11 +95,11 @@ if (isset($_SESSION['palpites']))
   $palpites = array_reverse($_SESSION['palpites']);
 if (isset($_SESSION['nomes']))
   $nomes = $_SESSION['nomes'];
-if (isset($_SESSION['dicas_reveladas']))
-  $dicas = $_SESSION['dicas_reveladas'];
 if (isset($_SESSION['descobriu']))
   $descobriu = $_SESSION['descobriu'];
 
+if (isset($_SESSION['dicas_reveladas']))
+$dicas = $_SESSION['dicas_reveladas'];
 if (isset($_POST['dica'])) {
   $n = $_POST['dica'];
   //var_dump($n);
@@ -107,16 +126,16 @@ if (isset($_POST['novo'])) {
 
   $_SESSION['seed'] = $dados['seed'];
   $_SESSION['modo'] = $dados['modo'];
-  $_SESSION['dicas'] = $dados['dicas'];
   $seed = $_SESSION['seed'];
   $palpites = [];
   $nomes = [];
   $descobriu = false;
-  $_SESSION['dicas_reveladas'] = [false, false];
-  $dicas = $_SESSION['dicas_reveladas'];
   unset($_SESSION['palpites']);
   unset($_SESSION['nomes']);
   unset($_SESSION['descobriu']);
+  $_SESSION['dicas'] = $dados['dicas'];
+  $_SESSION['dicas_reveladas'] = [false, false];
+  $dicas = $_SESSION['dicas_reveladas'];
 
   unset($_SESSION['ids']);
   unset($_SESSION['sprites']);
@@ -138,8 +157,9 @@ if (empty($_SESSION['nomes'])) {
   $_SESSION['nomes'] = $dados['nomes'];
   //$collator = collator_create('pt-BR');
   //collator_sort($collator, $_SESSION['nomes']);
-  setlocale(LC_COLLATE, 'pt_BR', 'pt_BR.utf-8');
-  sort($_SESSION['nomes']);
+  //setlocale(LC_COLLATE, 'pt_BR', 'pt_BR.utf-8');
+  //sort($_SESSION['nomes']);
+  usort($_SESSION['nomes'], "cmp");
   $nomes = $_SESSION['nomes'];
 }
 
@@ -238,7 +258,7 @@ seed: [<?php echo $seed; ?>]<br>
   echo ($dicas[0] && $dicas[0]['durante_o_jogo'] ? 'mapa' : '')
     . ($dicas[0] && $dicas[0]['durante_o_jogo'] && $dicas[1] && $dicas[1]['durante_o_jogo'] ? ', ' : '')
     . ($dicas[1] && $dicas[1]['durante_o_jogo'] ? 'item' : '')
-    . (!$dicas[0] && !$dicas[1] ? 'Nenhuma' : '');
+    . (!$dicas[0] && !$dicas[1] ? 'nenhuma' : '');
 ?>
 <form action="ragnarokdle-monstros.php" method="POST">
 <?php
