@@ -81,8 +81,8 @@ $palpites = [];
 $nomes = [];
 $descobriu = false;
 $dicas = [false, false];
-$qtde_palpites_pra_revelar_dica_1 = 7;
-$qtde_palpites_pra_revelar_dica_2 = 12;
+$qtde_palpites_pra_revelar_dica_1 = 5;
+$qtde_palpites_pra_revelar_dica_2 = 10;
 
 $palpite = '';
 $erro = '';
@@ -107,6 +107,8 @@ if (isset($_POST['dica'])) {
     $_SESSION['dicas_reveladas'][$n] = ['durante_o_jogo' => !$descobriu];
     $dicas = $_SESSION['dicas_reveladas'];
   }
+  header('Location: ragnarokdle-armas.php');
+  die();
 }
   
 if (isset($_POST['novo'])) {
@@ -139,6 +141,8 @@ if (isset($_POST['novo'])) {
 
   unset($_SESSION['ids']); //lembrete
   unset($_SESSION['sprites']);
+  header('Location: ragnarokdle-armas.php');
+  die();
 }
 
 if (empty($_SESSION['nomes'])) {
@@ -174,6 +178,8 @@ if (isset($_POST['palpite']) && $_SESSION['descobriu'] == false) {
     $arma = $dados;
     array_push($_SESSION['palpites'], $arma);
     array_unshift($palpites, $arma);
+    header('Location: ragnarokdle-armas.php');
+    die();
   }
 }
 
@@ -290,9 +296,9 @@ seed: [<?php echo $seed; ?>]<br>
       echo '<button type="submit" name="dica" value="'. 1 .'">Revelar monstro com maior chance de drop</button>';
   } else if ($_SESSION['dicas'][1]) {
     $monstro = '';
-    $chance = -1;
+    $chance = -1.0;
     foreach ($_SESSION['dicas'][1] as $drop) {
-      $c = (int) str_replace('%', '', $drop->rate);
+      $c = (double) str_replace('%', '', $drop->rate);
       if ($c > $chance) {
         $chance = $c;
         $monstro = $drop->monster;

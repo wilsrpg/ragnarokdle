@@ -8,9 +8,16 @@ if (isset($_POST['voltar'])) {
   die();
 }
 
+if (isset($_POST['data']) && $_POST['data'] > date("Y-m-d")) {
+  $_SESSION['mensagem'] = 'Não é permitido jogar no futuro.';
+  header('Location: index.php');
+  die();
+}
+
 if (empty($_POST['novo'])) {
   //if (isset($_SESSION['seed']) && $_SESSION['seed'] != date("Ymd")) {
   //  unset($_SESSION);
+  //  $_SESSION['mensagem'] = 'Havia um jogo em andamento.';
   //  header('Location: index.php');
   //  die();
   //}
@@ -30,6 +37,7 @@ if (empty($_POST['novo'])) {
 
 function obter_dados($rota, $post=[]) {
   $URL_BASE = 'http://localhost/ragnarokdle-api/ragnarokdle-api/v1';
+  //$URL_BASE = 'http://ragnarokdle.x10.mx/ragnarokdle-api/v1';
   $cookieFile = getcwd().'/cookies/cookie.txt';
   $ch = curl_init();
 
@@ -80,9 +88,12 @@ $seed = 0;
 $palpites = [];
 $nomes = [];
 $descobriu = false;
-$dicas = [false, false];
-$qtde_palpites_pra_revelar_dica_1 = 7;
-$qtde_palpites_pra_revelar_dica_2 = 12;
+$dicas = [
+  ['dica' => '', 'revelada' => false, 'durante_o_jogo' => false],
+  ['dica' => '', 'revelada' => false, 'durante_o_jogo' => false]
+];
+$qtde_palpites_pra_revelar_dica_1 = 5;
+$qtde_palpites_pra_revelar_dica_2 = 10;
 
 $palpite = '';
 $erro = '';
@@ -98,19 +109,27 @@ if (isset($_SESSION['nomes']))
 if (isset($_SESSION['descobriu']))
   $descobriu = $_SESSION['descobriu'];
 
-if (isset($_SESSION['dicas_reveladas']))
-$dicas = $_SESSION['dicas_reveladas'];
+if (isset($_SESSION['dicas']))
+  $dicas = $_SESSION['dicas'];
+
 if (isset($_POST['dica'])) {
-  $n = $_POST['dica'];
-  //var_dump($n);
-  if (isset($_SESSION['dicas'][$n])) {
-    $_SESSION['dicas_reveladas'][$n] = ['durante_o_jogo' => !$descobriu];
-    $dicas = $_SESSION['dicas_reveladas'];
+  $n = (int) $_POST['dica'];
+  if ($n < 0 || $n > 1) {
+    $_SESSION['mensagem'] = 'Dica inexistente: "'.$_POST['dica'].'"';
+    die();
   }
+  $_SESSION['dicas'][$n]['revelada'] = true;
+  if (!$descobriu)
+    $_SESSION['dicas'][$n]['durante_o_jogo'] = true;
+  $dicas = $_SESSION['dicas'];
+  header('Location: ragnarokdle-monstros.php');
+  die();
 }
 
 if (isset($_POST['novo'])) {
-  $dados = obter_dados('/jogo', ['modo'=>'monstro']);
+  if (isset($_POST['data']))
+    $data = str_replace('-','',$_POST['data']);
+  $dados = obter_dados('/jogo', ['modo'=>'monstro', 'data' => $data]);
   //var_dump($dados);exit;
   if (!$dados) {
     $_SESSION['mensagem'] = 'Erro na comunicação com o servidor.';
@@ -133,12 +152,13 @@ if (isset($_POST['novo'])) {
   unset($_SESSION['palpites']);
   unset($_SESSION['nomes']);
   unset($_SESSION['descobriu']);
-  $_SESSION['dicas'] = $dados['dicas'];
-  $_SESSION['dicas_reveladas'] = [false, false];
-  $dicas = $_SESSION['dicas_reveladas'];
-
-  unset($_SESSION['ids']);
-  unset($_SESSION['sprites']);
+  $_SESSION['dicas'] = [
+    ['dica' => $dados['dicas'][0], 'revelada' => false, 'durante_o_jogo' => false],
+    ['dica' => $dados['dicas'][1], 'revelada' => false, 'durante_o_jogo' => false]
+  ];
+  $dicas = $_SESSION['dicas'];
+  header('Location: ragnarokdle-monstros.php');
+  die();
 }
 
 if (empty($_SESSION['nomes'])) {
@@ -153,7 +173,6 @@ if (empty($_SESSION['nomes'])) {
     header('Location: index.php');
     die();
   }
-  //$_SESSION['ids'] = $dados['ids_dos_monstros'];
   $_SESSION['nomes'] = $dados['nomes'];
   //$collator = collator_create('pt-BR');
   //collator_sort($collator, $_SESSION['nomes']);
@@ -174,6 +193,8 @@ if (isset($_POST['palpite']) && $_SESSION['descobriu'] == false) {
     $monstro = $dados;
     array_push($_SESSION['palpites'], $monstro);
     array_unshift($palpites, $monstro);
+    header('Location: ragnarokdle-monstros.php');
+    die();
   }
 }
 
@@ -238,61 +259,56 @@ foreach ($nomes_restantes as $p)
 </datalist>
 
 Ragnarökdle - Monstros<br>
-seed: [<?php echo $seed; ?>]<br>
+Data do jogo: <?php echo $seed; ?><br>
 
 <form action="ragnarokdle-monstros.php" method="POST">
   <input type="submit" name="voltar" value="Voltar">
 </form>
 
-<form action="ragnarokdle-monstros.php" method="POST" id="form_palpite" style="margin: 0.5rem 0;">
+<form id="form_palpite" action="ragnarokdle-monstros.php" method="POST" style="margin: 0.5rem 0;">
   <label for="palpite">Monstro:</label><br>
   <input id="palpite" list="monstros" name="palpite" autofocus autocomplete="off" />
   <input id="enviar" type="submit" <?php if ($descobriu) echo 'disabled'; ?> value="Enviar">
 </form>
 <?php echo $erro; ?>
 <br>
+<br>
 
-<br>Palpites: <?php echo count($palpites); ?>
+Palpites: <?php echo count($palpites); ?>
 <br>Dicas reveladas durante o jogo:
 <?php
-  echo ($dicas[0] && $dicas[0]['durante_o_jogo'] ? 'mapa' : '')
-    . ($dicas[0] && $dicas[0]['durante_o_jogo'] && $dicas[1] && $dicas[1]['durante_o_jogo'] ? ', ' : '')
-    . ($dicas[1] && $dicas[1]['durante_o_jogo'] ? 'item' : '')
-    . (!$dicas[0] && !$dicas[1] ? 'nenhuma' : '');
+  echo ($dicas[0]['durante_o_jogo'] ? 'mapa' : '')
+    . ($dicas[0]['durante_o_jogo'] && $dicas[1]['durante_o_jogo'] ? ', ' : '')
+    . ($dicas[1]['durante_o_jogo'] ? 'drop' : '')
+    . (!$dicas[0]['durante_o_jogo'] && !$dicas[1]['durante_o_jogo'] ? 'nenhuma' : '');
 ?>
 <form action="ragnarokdle-monstros.php" method="POST">
 <?php
-//var_dump($_SESSION['dicas']);
-//var_dump($dicas);
-//if (count($dicas) > 0)
-  //for ($i=0; $i < count($dicas); $i++) {
-    //$i = $seed % count($dicas);
-    if (!$dicas[0]){
-      if (count($palpites) < $qtde_palpites_pra_revelar_dica_1 && !$descobriu)
-        echo '<button disabled>Revelar primeira letra do mapa em '
-          .($qtde_palpites_pra_revelar_dica_1 - count($palpites))
-          .' palpites</button>';
-      else
-        echo '<button type="submit" name="dica" value="'. 0 .'">Revelar primeira letra do mapa</button>';
-    } else if (isset($_SESSION['dicas'][0][0]))
-      echo 'Nome do mapa'
-        .($descobriu ? ': '.$_SESSION['dicas'][0][0]->mapname
-          : ' começa com: "'.substr($_SESSION['dicas'][0][0]->mapname, 0, 1).'"');
+  if (!$dicas[0]['revelada']){
+    if (count($palpites) < $qtde_palpites_pra_revelar_dica_1 && !$descobriu)
+      echo '<button disabled>Revelar primeira letra de um mapa onde spawna em '
+        .($qtde_palpites_pra_revelar_dica_1 - count($palpites))
+        .' palpites</button>';
     else
-      echo 'Não spawna naturalmente.';
-  //}
+      echo '<button type="submit" name="dica" value="'. 0 .'">Revelar primeira letra de um mapa onde spawna</button>';
+  } else if ($_SESSION['dicas'][0]['dica'])
+    echo 'Nome do mapa'
+      .($descobriu ? ': '.$_SESSION['dicas'][0]['dica'][0]->mapname
+        : ' começa com: "'.substr($_SESSION['dicas'][0]['dica'][0]->mapname, 0, 1).'"');
+  else
+    echo 'Nome do mapa: não spawna naturalmente.';
   echo '<br>';
-  if (!$dicas[1]){
+  if (!$dicas[1]['revelada']){
     if (count($palpites) < $qtde_palpites_pra_revelar_dica_2 && !$descobriu)
       echo '<button disabled>Revelar item com maior chance de drop em '
         .($qtde_palpites_pra_revelar_dica_2 - count($palpites))
         .' palpites</button>';
     else
       echo '<button type="submit" name="dica" value="'. 1 .'">Revelar item com maior chance de drop</button>';
-  } else if (isset($_SESSION['dicas'][1]->id))
-    echo 'Item com maior chance de drop: '.$_SESSION['dicas'][1]->nome.' ('.($_SESSION['dicas'][1]->chance/100).'%)';
+  } else if ($_SESSION['dicas'][1]['dica']->id)
+    echo 'Item com maior chance de drop: '.$_SESSION['dicas'][1]['dica']->nome.' ('.($_SESSION['dicas'][1]['dica']->chance/100).'%)';
   else
-    echo 'Não dropa nenhum item.';
+    echo 'Item com maior chance de drop: não dropa nenhum item.';
 ?>
 </form>
 
@@ -339,47 +355,24 @@ foreach($palpites as $pp) {
 </body>
 
 <script>
-  let alterou,tecla;
+  let alterou,tecla,tkey;
   document.getElementById('palpite').addEventListener('keydown', function (e) {
-    //if(e.repeat)
-    //  return;
-    //console.log(e.keyCode);
-    if (e.keyCode >= 33 && e.keyCode <= 40)
+    tkey = e.key;
+    if ((e.keyCode >= 33 && e.keyCode <= 40) || e.keyCode == 13)
       tecla = false;
     else
       tecla = true;
-    //if(e.key == "Enter"){
-    //  console.log('Enter');
-      //document.getElementById('form_palpite').submit();
-      //document.getElementById('form_palpite').click();
-      //iniciar();
-    //}
   });
   document.getElementById('palpite').addEventListener('click', function (e) {
     //console.log('clicou');
     tecla = false;
-    //if(e.key == "Enter"){
-    //  console.log('Enter');
-    //  //document.getElementById('form_palpite').submit();
-    //  //document.getElementById('form_palpite').click();
-    //  //iniciar();
-    //}
+    //console.log(tecla);
   });
   document.getElementById('palpite').addEventListener('input', function (e) {
-    //if (tecla)
-    //  console.log('alterou com tecla');
-    //else
-    if (!tecla && !document.getElementById('enviar').disabled) {
-      //console.log('alterou SEM tecla');
+    //console.log(tecla);
+    if ((!tecla || !tkey) && !document.getElementById('enviar').disabled)
       document.getElementById('form_palpite').submit();
-    }
     tecla = false;
-    //if(e.key == "Enter"){
-    //  console.log('Enter');
-    //  //document.getElementById('form_palpite').submit();
-    //  //document.getElementById('form_palpite').click();
-    //  //iniciar();
-    //}
   });
 </script>
 

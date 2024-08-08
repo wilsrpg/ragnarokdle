@@ -5,12 +5,12 @@ date_default_timezone_set('America/Sao_Paulo');
 require 'vendor/autoload.php';
 if (session_status() === 1)
   session_start();
-$seed = (int) date("Ymd");
+//$seed = (int) date("Ymd");
 
-if(isset($_SESSION['seed']) && $_SESSION['seed'] != date("Ymd"))
-  $_SESSION = [];
+//if(isset($_SESSION['seed']) && $_SESSION['seed'] != date("Ymd"))
+//  $_SESSION = [];
 
-if(isset($_POST['continuar']) && isset($_SESSION['modo'])) {
+if (isset($_POST['continuar']) && isset($_SESSION['modo'])) {
   if ($_SESSION['modo'] == 'monstro')
     header('Location: ragnarokdle-monstros.php');
   else if ($_SESSION['modo'] == 'arma')
@@ -18,8 +18,11 @@ if(isset($_POST['continuar']) && isset($_SESSION['modo'])) {
   die();
 }
 
-if(isset($_POST['excluir']))
+if (isset($_POST['excluir'])) {
   $_SESSION = [];
+  header('Location: index.php');
+  die();
+}
 ?>
 
 <!DOCTYPE html>
@@ -37,8 +40,12 @@ Ragnarökdle
   Selecione o modo de jogo:<br>
   <input type="radio" name="modo" id="monstro" value="monstro" onchange="atualizarModo()" checked autofocus />
   <label for="monstro">Monstro</label>
-  <input type="radio" name="modo" id="item" value="item" onchange="atualizarModo()" />
-  <label for="item">Item</label>
+  <input type="radio" name="modo" id="arma" value="arma" onchange="atualizarModo()" />
+  <label for="arma">Arma</label>
+  <br><br>
+  Seed (opcional):
+  <br>
+  <input type="date" name="data" value="<?php echo date('Y-m-d'); ?>" />
   <br><br>
   <input type="submit" name="novo" value="Iniciar novo jogo">
 </form>
@@ -63,14 +70,14 @@ if (!empty($_SESSION['mensagem'])) {
   function atualizarModo() {
     if (document.getElementById('monstro').checked)
       document.getElementById('jogo').action = 'ragnarokdle-monstros.php';
-    if (document.getElementById('item').checked)
+    if (document.getElementById('arma').checked)
       document.getElementById('jogo').action = 'ragnarokdle-armas.php';
   }
 
   function iniciar() {
     if (document.getElementById('monstro').checked)
       document.getElementById('jogo').action = 'ragnarokdle-monstros.php';
-    if (document.getElementById('item').checked)
+    if (document.getElementById('arma').checked)
       document.getElementById('jogo').action = 'ragnarokdle-armas.php';
   }
 </script>
