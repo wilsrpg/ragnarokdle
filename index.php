@@ -1,6 +1,6 @@
 <?php
 //header('Access-Control-Allow-Origin: *');
-//date_default_timezone_set('America/Sao_Paulo');
+date_default_timezone_set('America/Sao_Paulo');
 //echo session_id();
 require 'vendor/autoload.php';
 if (session_status() === 1)
