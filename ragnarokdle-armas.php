@@ -257,7 +257,7 @@ seed: [<?php echo $seed; ?>]<br>
 <?php
   echo ($dicas[0] && $dicas[0]['durante_o_jogo'] ? 'descrição' : '')
     . ($dicas[0] && $dicas[0]['durante_o_jogo'] && $dicas[1] && $dicas[1]['durante_o_jogo'] ? ', ' : '')
-    . ($dicas[1] && $dicas[1]['durante_o_jogo'] ? 'algum monstro' : '')
+    . ($dicas[1] && $dicas[1]['durante_o_jogo'] ? 'drop' : '')
     . (!$dicas[0] && !$dicas[1] ? 'nenhuma' : '');
 ?>
 <form action="ragnarokdle-armas.php" method="POST">
@@ -288,10 +288,20 @@ seed: [<?php echo $seed; ?>]<br>
         .' palpites</button>';
     else
       echo '<button type="submit" name="dica" value="'. 1 .'">Revelar monstro com maior chance de drop</button>';
-  } else if ($_SESSION['dicas'][1])
-    echo 'Monstro com maior chance de drop: '.$_SESSION['dicas'][1][0]->monster
-      .' ('.str_replace('.', ',', $_SESSION['dicas'][1][0]->rate).')';
-  else
+  } else if ($_SESSION['dicas'][1]) {
+    $monstro = '';
+    $chance = -1;
+    foreach ($_SESSION['dicas'][1] as $drop) {
+      $c = (int) str_replace('%', '', $drop->rate);
+      if ($c > $chance) {
+        $chance = $c;
+        $monstro = $drop->monster;
+      }
+    }
+    //echo 'Monstro com maior chance de drop: '.$_SESSION['dicas'][1][0]->monster
+    //  .' ('.str_replace('.', ',', $_SESSION['dicas'][1][0]->rate).')';
+    echo 'Monstro com maior chance de drop: '.$monstro.' ('.$chance.'%)';
+  } else
     echo 'Não dropa de nenhum monstro.';
 ?>
 </form>
